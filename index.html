@@ -2,28 +2,94 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>日常予想ポイントアプリ</title>
     <style>
-        body { font-family: sans-serif; text-align: center; padding: 20px; }
-        .card { border: 1px solid #ccc; padding: 20px; border-radius: 10px; margin: 10px; }
-        button { padding: 10px 20px; cursor: pointer; }
+        /* シンプルで見やすいスタイル */
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .page { display: none; } /* 基本は非表示 */
+        .active { display: block; } /* activeクラスがついた画面だけ表示 */
+        
+        button { 
+            background-color: #007bff; color: white; border: none; padding: 12px 24px; 
+            border-radius: 25px; cursor: pointer; font-size: 16px; margin: 10px; transition: 0.3s;
+        }
+        button:hover { background-color: #0056b3; }
+        button.secondary { background-color: #6c757d; }
+        
+        .points-display { font-size: 24px; font-weight: bold; color: #28a745; margin: 20px 0; }
+        .prediction-card { border: 2px solid #e9ecef; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
-    <h1>日常予想アプリ</h1>
-    <p>現在のポイント: <span id="points">100</span> pt</p>
 
-    <div class="card">
-        <h3>予想：明日のランチは「麺類」である</h3>
-        <button onclick="predict(true)">当たる！</button>
-        <button onclick="predict(false)">外れる！</button>
+<div class="container">
+    <!-- 1. ホーム画面 -->
+    <div id="page-home" class="page active">
+        <h1>🏠 ホーム</h1>
+        <div class="points-display">現在のポイント: <span id="current-pts">100</span> pt</div>
+        <p>新しいイベントが発生しています！</p>
+        <button onclick="navigate('page-predict')">予想に参加する</button>
     </div>
 
-    <script>
-        let pts = 100;
-        function predict(isYes) {
-            alert(isYes ? "「当たる！」に賭けました。結果を待ちましょう！" : "「外れる！」に賭けました。");
+    <!-- 2. 予想画面 -->
+    <div id="page-predict" class="page">
+        <h1>🔮 予想する</h1>
+        <div class="prediction-card">
+            <h3>お題：明日のランチは「麺類」？</h3>
+            <p>（当たれば +50pt / 外れれば -30pt）</p>
+        </div>
+        <button onclick="makePrediction('Yes')">当たる！</button>
+        <button onclick="makePrediction('No')">外れる！</button>
+        <br>
+        <button class="secondary" onclick="navigate('page-home')">戻る</button>
+    </div>
+
+    <!-- 3. 結果画面 -->
+    <div id="page-result" class="page">
+        <h1>🏁 結果</h1>
+        <div id="result-message" style="font-size: 20px; margin: 20px 0;"></div>
+        <div class="points-display">確定ポイント: <span id="new-pts">100</span> pt</div>
+        <button onclick="navigate('page-home')">ホームへ戻る</button>
+    </div>
+</div>
+
+<script>
+    let points = 100;
+
+    // 画面を切り替える関数
+    function navigate(pageId) {
+        // すべてのページからactiveクラスを取り除く
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+        // 指定されたページにactiveクラスをつける
+        document.getElementById(pageId).classList.add('active');
+    }
+
+    // 予想ボタンを押した時の処理
+    function makePrediction(choice) {
+        // 本来はここで数日待つなどの処理が入りますが、
+        // 今は練習用に、50%の確率ですぐに結果が出るようにします。
+        const isWin = Math.random() > 0.5;
+        
+        if (isWin) {
+            points += 50;
+            document.getElementById('result-message').innerText = "🎉 おめでとう！予想的中です！";
+            document.getElementById('result-message').style.color = "#28a745";
+        } else {
+            points -= 30;
+            document.getElementById('result-message').innerText = "💀 残念！外れてしまいました…。";
+            document.getElementById('result-message').style.color = "#dc3545";
         }
-    </script>
+
+        // ポイント表示を更新して結果画面へ
+        document.getElementById('current-pts').innerText = points;
+        document.getElementById('new-pts').innerText = points;
+        navigate('page-result');
+    }
+</script>
+
 </body>
 </html>
