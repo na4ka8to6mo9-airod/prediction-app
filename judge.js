@@ -19,7 +19,7 @@ async function judge() {
 
     for (const pred of predictions) {
         // 2. OpenWeather APIで昨日の天気を取得（東京: 1850147）
-        const res = await fetch(`api.openweathermap.org{weatherApiKey}`);
+        const res = await fetch(`https://api.openweathermap.org/data/2.5/weather?id=1850147&appid=${weatherApiKey}`);
         const weatherData = await res.json();
         
         // 天気コード 800台が「晴れ」
