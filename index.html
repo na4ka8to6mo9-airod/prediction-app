@@ -40,9 +40,15 @@
     <!-- 3. 予想画面 -->
     <div id="page-predict" class="page">
         <h1>🔮 予想する</h1>
-        <p>明日のランチは「麺類」？</p>
-        <button onclick="makePrediction(true)">当たる！</button>
-        <button onclick="makePrediction(false)">外れる！</button>
+        <h3 id="prediction-title">読み込み中...</h3>
+        
+        <!-- 表記を Yes / No に変更 -->
+        <button onclick="makePrediction(true)" style="background-color: #28a745;">Yes (そう思う)</button>
+        <button onclick="makePrediction(false)" style="background-color: #dc3545;">No (思わない)</button>
+        <br>
+        <button class="secondary" onclick="navigate('page-home')" style="background-color: #6c757d;">戻る</button>
+
+        <input type="hidden" id="prediction-id">
     </div>
 
     <!-- 4. 結果画面 -->
@@ -110,25 +116,57 @@
         document.getElementById(pageId).classList.add('active');
     }
 
-    async function makePrediction(choice) {
-        const isWin = Math.random() > 0.5;
-        points += (isWin ? 50 : -30);
+    // --- 修正版：お題を読み込んで表示する関数 ---
+    async function loadPredictions() {
+        const { data, error } = await _supabase
+            .from('predictions')
+            .select('*')
+            .eq('status', 'open')
+            .order('target_date', { ascending: true })
+            .limit(1)
+            .single();
 
+        if (data) {
+            // 画面にお題を表示
+            document.getElementById('prediction-title').innerText = data.title;
+            document.getElementById('prediction-id').value = data.id; // 隠し要素にIDを持たせる
+        }
+    }
+
+    // --- 予想を保存する関数 ---
+    async function makePrediction(choice) {
+        const predictionId = document.getElementById('prediction-id').value;
+        if (!predictionId) {
+            alert("お題が読み込まれていません。");
+            return;
+        }
+        
         const { error } = await _supabase
-            .from('user_profiles')
-            .update({ points: points })
-            .eq('id', userId);
+            .from('user_bets')
+            .insert({
+                user_id: userId,
+                prediction_id: predictionId,
+                prediction_choice: choice
+            });
 
         if (error) {
-            alert("保存に失敗しました: " + error.message);
+            if (error.code === '23505') alert("このお題には既に回答済みです！");
+            else alert("エラー: " + error.message);
         } else {
-            document.getElementById('result-message').innerText = isWin ? "的中！+50pt" : "ハズレ... -30pt";
-            updateDisplay();
+            // メッセージを調整
+            const choiceText = choice ? "Yes" : "No";
+            document.getElementById('result-message').innerText = `「${choiceText}」で予想を受け付けました！結果をお楽しみに。`;
             navigate('page-result');
         }
     }
 
-    checkUser();
+    // --- 起動時に実行する処理 ---
+    async function init() {
+        await checkUser();      // ログイン確認
+        await loadPredictions(); // お題の読み込み
+    }
+
+    init();
 </script>
 </body>
 </html>
