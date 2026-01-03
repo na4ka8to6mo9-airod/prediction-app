@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>日常予想アプリ（Supabase版）</title>
-    <!-- Supabaseのライブラリを読み込み -->
-    <script src="cdn.jsdelivr.net"></script>
+    <!-- 【修正ポイント】ライブラリのURLを正しくフルで記述します -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
     <style>
         body { font-family: sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; }
         .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -18,7 +18,7 @@
 <body>
 
 <div class="container">
-    <!-- ログイン画面 -->
+    <!-- 1. ログイン画面 -->
     <div id="page-login" class="page active">
         <h1>🔑 ログイン / 登録</h1>
         <input type="email" id="email" placeholder="メールアドレス">
@@ -28,7 +28,7 @@
         <p style="font-size: 12px;">※登録時、確認メールが届く場合があります</p>
     </div>
 
-    <!-- ホーム画面 -->
+    <!-- 2. ホーム画面 -->
     <div id="page-home" class="page">
         <h1>🏠 ホーム</h1>
         <p id="user-email"></p>
@@ -37,7 +37,7 @@
         <button onclick="signOut()" style="background: #6c757d;">ログアウト</button>
     </div>
 
-    <!-- 予想画面 (以前と同じですが、保存処理を追加) -->
+    <!-- 3. 予想画面 -->
     <div id="page-predict" class="page">
         <h1>🔮 予想する</h1>
         <p>明日のランチは「麺類」？</p>
@@ -45,24 +45,23 @@
         <button onclick="makePrediction(false)">外れる！</button>
     </div>
 
-    <!-- 結果画面 -->
+    <!-- 4. 結果画面 -->
     <div id="page-result" class="page">
         <h1>🏁 結果</h1>
-        <div id="result-message"></div>
+        <div id="result-message" style="margin: 20px 0; font-weight: bold;"></div>
         <button onclick="navigate('page-home')">ホームへ戻る</button>
     </div>
 </div>
 
 <script>
-    // 1. Supabaseの初期化
     const supabaseUrl = 'https://nbukravpkrdtpfkbmhvf.supabase.co';
-    const supabaseKey = 'sb_publishable_S7biSRXNXBIgW1bG-Hjf7Q_m9VbdUCq'; // あなたの公開鍵
-    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
+    const supabaseKey = 'sb_publishable_S7biSRXNXBIgW1bG-Hjf7Q_m9VbdUCq';
+    
+    // window.supabaseから確実に初期化
+    const _supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
     let points = 100;
     let userId = null;
 
-    // 2. ログイン・会員登録の関数
     async function signUp() {
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
@@ -84,14 +83,12 @@
         location.reload();
     }
 
-    // 3. ユーザー情報の取得とポイントの読み込み
     async function checkUser() {
         const { data: { user } } = await _supabase.auth.getUser();
         if (user) {
             userId = user.id;
             document.getElementById('user-email').innerText = user.email;
             
-            // データベースから現在のポイントを取得
             const { data, error } = await _supabase
                 .from('user_profiles')
                 .select('points')
@@ -113,12 +110,10 @@
         document.getElementById(pageId).classList.add('active');
     }
 
-    // 4. 予想とポイントの保存
     async function makePrediction(choice) {
         const isWin = Math.random() > 0.5;
         points += (isWin ? 50 : -30);
 
-        // Supabaseにポイントを保存
         const { error } = await _supabase
             .from('user_profiles')
             .update({ points: points })
@@ -133,7 +128,6 @@
         }
     }
 
-    // 起動時にログイン状態を確認
     checkUser();
 </script>
 </body>
