@@ -3,93 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>日常予想ポイントアプリ</title>
+    <title>日常予想アプリ（Supabase版）</title>
+    <!-- Supabaseのライブラリを読み込み -->
+    <script src="cdn.jsdelivr.net"></script>
     <style>
-        /* シンプルで見やすいスタイル */
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; color: #333; }
-        .container { max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        .page { display: none; } /* 基本は非表示 */
-        .active { display: block; } /* activeクラスがついた画面だけ表示 */
-        
-        button { 
-            background-color: #007bff; color: white; border: none; padding: 12px 24px; 
-            border-radius: 25px; cursor: pointer; font-size: 16px; margin: 10px; transition: 0.3s;
-        }
-        button:hover { background-color: #0056b3; }
-        button.secondary { background-color: #6c757d; }
-        
-        .points-display { font-size: 24px; font-weight: bold; color: #28a745; margin: 20px 0; }
-        .prediction-card { border: 2px solid #e9ecef; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        body { font-family: sans-serif; text-align: center; background-color: #f0f2f5; padding: 20px; }
+        .container { max-width: 500px; margin: 0 auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .page { display: none; }
+        .active { display: block; }
+        button { padding: 12px 24px; border-radius: 25px; cursor: pointer; margin: 10px; border: none; background: #007bff; color: white; }
+        input { padding: 10px; margin: 5px; width: 80%; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- 1. ホーム画面 -->
-    <div id="page-home" class="page active">
-        <h1>🏠 ホーム</h1>
-        <div class="points-display">現在のポイント: <span id="current-pts">100</span> pt</div>
-        <p>新しいイベントが発生しています！</p>
-        <button onclick="navigate('page-predict')">予想に参加する</button>
+    <!-- ログイン画面 -->
+    <div id="page-login" class="page active">
+        <h1>🔑 ログイン / 登録</h1>
+        <input type="email" id="email" placeholder="メールアドレス">
+        <input type="password" id="password" placeholder="パスワード">
+        <button onclick="signUp()">新規登録</button>
+        <button onclick="signIn()">ログイン</button>
+        <p style="font-size: 12px;">※登録時、確認メールが届く場合があります</p>
     </div>
 
-    <!-- 2. 予想画面 -->
+    <!-- ホーム画面 -->
+    <div id="page-home" class="page">
+        <h1>🏠 ホーム</h1>
+        <p id="user-email"></p>
+        <div style="font-size: 24px; color: #28a745;">保有ポイント: <span id="current-pts">--</span> pt</div>
+        <button onclick="navigate('page-predict')">予想に参加する</button>
+        <button onclick="signOut()" style="background: #6c757d;">ログアウト</button>
+    </div>
+
+    <!-- 予想画面 (以前と同じですが、保存処理を追加) -->
     <div id="page-predict" class="page">
         <h1>🔮 予想する</h1>
-        <div class="prediction-card">
-            <h3>お題：明日のランチは「麺類」？</h3>
-            <p>（当たれば +50pt / 外れれば -30pt）</p>
-        </div>
-        <button onclick="makePrediction('Yes')">当たる！</button>
-        <button onclick="makePrediction('No')">外れる！</button>
-        <br>
-        <button class="secondary" onclick="navigate('page-home')">戻る</button>
+        <p>明日のランチは「麺類」？</p>
+        <button onclick="makePrediction(true)">当たる！</button>
+        <button onclick="makePrediction(false)">外れる！</button>
     </div>
 
-    <!-- 3. 結果画面 -->
+    <!-- 結果画面 -->
     <div id="page-result" class="page">
         <h1>🏁 結果</h1>
-        <div id="result-message" style="font-size: 20px; margin: 20px 0;"></div>
-        <div class="points-display">確定ポイント: <span id="new-pts">100</span> pt</div>
+        <div id="result-message"></div>
         <button onclick="navigate('page-home')">ホームへ戻る</button>
     </div>
 </div>
 
 <script>
-    let points = 100;
+    // 1. Supabaseの初期化
+    const supabaseUrl = 'https://nbukravpkrdtpfkbmhvf.supabase.co';
+    const supabaseKey = 'sb_publishable_S7biSRXNXBIgW1bG-Hjf7Q_m9VbdUCq'; // あなたの公開鍵
+    const _supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-    // 画面を切り替える関数
+    let points = 100;
+    let userId = null;
+
+    // 2. ログイン・会員登録の関数
+    async function signUp() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { data, error } = await _supabase.auth.signUp({ email, password });
+        if (error) alert(error.message);
+        else alert("登録確認メールを確認してください！");
+    }
+
+    async function signIn() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const { data, error } = await _supabase.auth.signInWithPassword({ email, password });
+        if (error) alert(error.message);
+        else checkUser();
+    }
+
+    async function signOut() {
+        await _supabase.auth.signOut();
+        location.reload();
+    }
+
+    // 3. ユーザー情報の取得とポイントの読み込み
+    async function checkUser() {
+        const { data: { user } } = await _supabase.auth.getUser();
+        if (user) {
+            userId = user.id;
+            document.getElementById('user-email').innerText = user.email;
+            
+            // データベースから現在のポイントを取得
+            const { data, error } = await _supabase
+                .from('user_profiles')
+                .select('points')
+                .eq('id', userId)
+                .single();
+            
+            if (data) points = data.points;
+            updateDisplay();
+            navigate('page-home');
+        }
+    }
+
+    function updateDisplay() {
+        document.getElementById('current-pts').innerText = points;
+    }
+
     function navigate(pageId) {
-        // すべてのページからactiveクラスを取り除く
-        document.querySelectorAll('.page').forEach(page => {
-            page.classList.remove('active');
-        });
-        // 指定されたページにactiveクラスをつける
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         document.getElementById(pageId).classList.add('active');
     }
 
-    // 予想ボタンを押した時の処理
-    function makePrediction(choice) {
-        // 本来はここで数日待つなどの処理が入りますが、
-        // 今は練習用に、50%の確率ですぐに結果が出るようにします。
+    // 4. 予想とポイントの保存
+    async function makePrediction(choice) {
         const isWin = Math.random() > 0.5;
-        
-        if (isWin) {
-            points += 50;
-            document.getElementById('result-message').innerText = "🎉 おめでとう！予想的中です！";
-            document.getElementById('result-message').style.color = "#28a745";
+        points += (isWin ? 50 : -30);
+
+        // Supabaseにポイントを保存
+        const { error } = await _supabase
+            .from('user_profiles')
+            .update({ points: points })
+            .eq('id', userId);
+
+        if (error) {
+            alert("保存に失敗しました: " + error.message);
         } else {
-            points -= 30;
-            document.getElementById('result-message').innerText = "💀 残念！外れてしまいました…。";
-            document.getElementById('result-message').style.color = "#dc3545";
+            document.getElementById('result-message').innerText = isWin ? "的中！+50pt" : "ハズレ... -30pt";
+            updateDisplay();
+            navigate('page-result');
         }
-
-        // ポイント表示を更新して結果画面へ
-        document.getElementById('current-pts').innerText = points;
-        document.getElementById('new-pts').innerText = points;
-        navigate('page-result');
     }
-</script>
 
+    // 起動時にログイン状態を確認
+    checkUser();
+</script>
 </body>
 </html>
