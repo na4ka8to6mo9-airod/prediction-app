@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>日常予想ポイントアプリ</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding: 20px; }
+        .card { border: 1px solid #ccc; padding: 20px; border-radius: 10px; margin: 10px; }
+        button { padding: 10px 20px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>日常予想アプリ</h1>
+    <p>現在のポイント: <span id="points">100</span> pt</p>
+
+    <div class="card">
+        <h3>予想：明日のランチは「麺類」である</h3>
+        <button onclick="predict(true)">当たる！</button>
+        <button onclick="predict(false)">外れる！</button>
+    </div>
+
+    <script>
+        let pts = 100;
+        function predict(isYes) {
+            alert(isYes ? "「当たる！」に賭けました。結果を待ちましょう！" : "「外れる！」に賭けました。");
+        }
+    </script>
+</body>
+</html>
