@@ -1,0 +1,20 @@
+name: Daily Weather Judge
+on:
+  schedule:
+    - cron: '0 15 * * *' # 日本時間 24:00 (UTC 15:00)
+  workflow_dispatch: # 手動実行用ボタンを表示
+
+jobs:
+  judge:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install @supabase/supabase-js
+      - run: node judge.js
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPENWEATHER_API_KEY: ${{ secrets.OPENWEATHER_API_KEY }}
